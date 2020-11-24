@@ -3,6 +3,7 @@ A bash script that executes the Super Seven Performance Assessment Commands on a
 
 
 # Version History
+
 0.1 First version
 0.2 Added firewall check, send output to a logfile, page numbers of book
 0.3 Added RX-DRP check. Thnx to feedback on Check Mates

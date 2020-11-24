@@ -1,0 +1,73 @@
+#!/bin/bash
+#
+# s7pac v0.1 - Super Seven Performance Access Commands
+#
+# Created by Rick Hoppe
+# Based on Timothy Hall's presentation: Gateway Performance Optimization
+# https://community.checkpoint.com/docs/DOC-3169
+#
+# Version History
+# 0.1 First version
+###############################################################################
+
+echo "+-----------------------------------------------------------------------------+"
+echo "| Super Seven Performance Assessment Commands v0.1   (Thanks to Timothy Hall) |"
+echo "+-----------------------------------------------------------------------------+"
+echo "| Command #1: fwaccel stat                                                    |"
+echo "| Check for : Accelerator Status must be enabled (R77.xx/R80.10 versions)     |"
+echo "|             Status must be enabled (R80.20)                                 |"
+echo "|             Accept Templates must be enabled                                |"
+echo "|             Message \"disabled\" from (low rule number) = bad                 |"
+fwaccel stat
+echo ""
+echo "+-----------------------------------------------------------------------------+"
+echo "| Command #2: fwaccel stats -s                                                |"
+echo "| Check for : Accelerated conns/Totals conns:  >25% good, >50% great          |"
+echo "|             Accelerated pkts/Total pkts   :  >50% great                     |"
+echo "|             F2Fed pkts/Total pkts         :  <30% good, <10% great          |"
+echo "|             PXL pkts/Total pkts           :  >50% OK                        |"
+echo "+-----------------------------------------------------------------------------+"
+fwaccel stats -s
+echo ""
+echo "+-----------------------------------------------------------------------------+"
+echo "| Command #3: grep -c ^processor /proc/cpuinfo && /sbin/cpuinfo               |"
+echo "| Check for : If number of cores is roughly double what you are excpecting,   |"
+echo "|             hyperthreading may be enabled                                   |"
+echo "+-----------------------------------------------------------------------------+"
+grep -c ^processor /proc/cpuinfo && /sbin/cpuinfo
+echo ""
+echo "+-----------------------------------------------------------------------------+"
+echo "| Command #4: fw ctl affinity -l -r                                           |"
+echo "| Check for : SND/IRQ/Dispatcher Cores, # of CPU's allocated to interface(s)  |"
+echo "|             Firewall Workers/INSPECT Cores, # of CPU's allocated to fw_x    |"
+echo "|             R77.30: Support processes executed on ALL CPU's                 |"
+echo "|             R80.xx: Support processes only executed on Firewall Worker Cores|"
+echo "+-----------------------------------------------------------------------------+"
+fw ctl affinity -l -r
+echo ""
+echo "+-----------------------------------------------------------------------------+"
+echo "| Command #5: netstat -ni                                                     |"
+echo "| Check for : RX/TX errors                                                    |"
+echo "|             RX-DRP % should be <0.1% , calculated by (RX-DRP/RX-OK)*100     |"
+echo "|             TX-ERR might indicate Fast Ethernet/100Mbps Duplex Mismatch     |"
+echo "+-----------------------------------------------------------------------------+"
+netstat -ni
+echo ""
+echo "+-----------------------------------------------------------------------------+"
+echo "| Command #6: fw ctl multik stat                                              |"
+echo "| Check for : Large # of conns on Worker 0 - IPSec VPN/VoIP?                  |"
+echo "|             Large imbalance of connections on a single or multiple Workers  |"
+echo "+-----------------------------------------------------------------------------+"
+fw ctl multik stat
+echo ""
+echo "+-----------------------------------------------------------------------------+"
+echo "| Command #7: cpstat os -f multi_cpu -o 1 -c 5                                |"
+echo "| Check for : High SND/IRQ Core Utilization                                   |"
+echo "|             High Firewall Worker Core Utilization                           |"
+echo "+-----------------------------------------------------------------------------+"
+cpstat os -f multi_cpu -o 1 -c 5
+echo ""
+echo "+-----------------------------------------------------------------------------+"
+echo "| Thanks for using s7pac                                                      |"
+echo "+-----------------------------------------------------------------------------+"
+exit 0

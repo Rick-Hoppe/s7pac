@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# s7pac v0.3 - Super Seven Performance Access Commands
+# s7pac v0.4 - Super Seven Performance Access Commands
 # URL: https://community.checkpoint.com/docs/DOC-3174
 #
 # Created by Rick Hoppe (https://checkpoint.engineer)
@@ -12,6 +12,7 @@
 # 0.1 First version
 # 0.2 Added firewall check, send output to a logfile, page numbers of book
 # 0.3 Added RX-DRP check. Thnx to feedback on Check Mates
+# 0.4 Updated with R80.30 references to the book Max Power 2020
 #
 ###############################################################################
 
@@ -27,8 +28,6 @@ fi
 # Variables
 ###############################################################################
 log="$HOME/s7pac_$(hostname)_$(date +%Y-%m-%d-%H%M).log"
-book="Max Power: Check Point Firewall Performance Optimization - Second Edition"
-book_url="http://www.maxpowerfirewalls.com/"
 command1="fwaccel stat"
 command2="fwaccel stats -s"
 command3a="grep -c ^processor /proc/cpuinfo"
@@ -37,6 +36,11 @@ command4="fw ctl affinity -l -r"
 command5="netstat -ni"
 command6="fw ctl multik stat"
 command7="cpstat os -f multi_cpu -o 1 -c 5"
+current_version=$(cat /etc/cp-release)
+book3="Max Power 2020: Check Point Firewall Performance Optimization - 3rd Edition"
+book2="Max Power: Check Point Firewall Performance Optimization - Second Edition"
+book_url="http://www.maxpowerfirewalls.com/"
+
 
 
 ###############################################################################
@@ -94,7 +98,7 @@ color_clear=$(tput sgr0)
 # Hello world! Inspecting environment....
 ###############################################################################
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
-printf "| Super Seven Performance Assessment Commands v0.3   (Thanks to Timothy Hall) |\n" | tee -a $log
+printf "| Super Seven Performance Assessment Commands v0.4   (Thanks to Timothy Hall) |\n" | tee -a $log
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Inspecting your environment: " | tee -a $log
 if [[ $($CPDIR/bin/cpprod_util FwIsFirewallModule 2> /dev/null) != *"1"*  ]]; then
@@ -116,7 +120,16 @@ fi
 ###############################################################################
 printf "|                                                                             |\n" | tee -a $log
 printf "| Referred pagenumbers are to be found in the following book:                 |\n" | tee -a $log
-printf "| $book   |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| $book3 |\n" | tee -a $log
+printf "|                                                                             |\n" | tee -a $log
+printf "| or when specifically mentioned in                                           |\n" | tee -a $log
+printf "|                                                                             |\n" | tee -a $log
+printf "| $book2   |\n" | tee -a $log
+else
+printf "| $book2   |\n" | tee -a $log
+fi
+printf "|                                                                             |\n" | tee -a $log
 printf "| Available at $book_url                              |\n" | tee -a $log
 printf "|                                                                             |\n"
 
@@ -128,12 +141,18 @@ printf "+-----------------------------------------------------------------------
 printf "| Command #1: $command1                                                    |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
 printf "| Check for : Accelerator Status must be enabled (R77.xx/R80.10 versions)     |\n" | tee -a $log
-printf "|             Status must be enabled (R80.20)                                 |\n" | tee -a $log
+printf "|             Status must be enabled (R80.20 and higher)                      |\n" | tee -a $log
 printf "|             Accept Templates must be enabled                                |\n" | tee -a $log
 printf "|             Message \"disabled\" from (low rule number) = bad                 |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| Chapter 7: SecureXL throughput acceleration & SMT                           |\n" | tee -a $log
+printf "| Chapter 8: Access Control Policy Tuning                                     |\n" | tee -a $log
+printf "| Page 286                                                                    |\n" | tee -a $log
+else
 printf "| Chapter 9: SecureXL throughput acceleration                                 |\n" | tee -a $log
 printf "| Page 278                                                                    |\n" | tee -a $log
+fi
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
 run_command1=$($command1)
@@ -143,13 +162,23 @@ printf "\n\n" | tee -a $log
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Command #2: $command2                                                |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| Check for : Accelerated conns/Totals conns:  >50%% desired, >75%% ideal       |\n" | tee -a $log
+else
 printf "| Check for : Accelerated conns/Totals conns:  >25%% good, >50%% great          |\n" | tee -a $log
+fi
 printf "|             Accelerated pkts/Total pkts   :  >50%% great                     |\n" | tee -a $log
 printf "|             PXL pkts/Total pkts           :  >50%% OK                        |\n" | tee -a $log
 printf "|             F2Fed pkts/Total pkts         :  <30%% good, <10%% great          |\n"  | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| Chapter 7: SecureXL throughput acceleration & SMT                           |\n" | tee -a $log
+printf "| Chapter 8: Access Control Policy Tuning                                     |\n" | tee -a $log
+printf "| Page 288                                                                    |\n" | tee -a $log
+else
 printf "| Chapter 9: SecureXL throughput acceleration                                 |\n" | tee -a $log
 printf "| Page 287, Packet/Throughput Acceleration: The Three Kernel Paths            |\n" | tee -a $log
+fi
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
 run_command2=$($command2)
@@ -162,8 +191,13 @@ printf "|                                                                       
 printf "| Check for : If number of cores is roughly double what you are excpecting,   |\n" | tee -a $log
 printf "|             hyperthreading may be enabled                                   |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
-printf "| Chapter 7: CorexL Tuning                                                    |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| Chapter 6: CoreXL & Multi-Queue                                             |\n" | tee -a $log
+printf "| Page 175                                                                    |\n" | tee -a $log
+else
+printf "| Chapter 7: CoreXL Tuning                                                    |\n" | tee -a $log
 printf "| Page 239                                                                    |\n" | tee -a $log
+fi
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
 run_command3a=$($command3a)
@@ -180,8 +214,13 @@ printf "|             Firewall Workers/INSPECT Cores, # of CPU's allocated to fw
 printf "|             R77.30: Support processes executed on ALL CPU's                 |\n" | tee -a $log
 printf "|             R80.xx: Support processes only executed on Firewall Worker Cores|\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| Chapter 6: CoreXL & Multi-Queue                                             |\n" | tee -a $log
+printf "| Page 193                                                                    |\n" | tee -a $log
+else
 printf "| Chapter 7: CoreXL Tuning                                                    |\n" | tee -a $log
 printf "| Page 221                                                                    |\n" | tee -a $log
+fi
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
 run_command4=$($command4)
@@ -195,11 +234,19 @@ printf "| Check for : RX/TX errors                                              
 printf "|             RX-DRP %% should be <0.1%% calculated by (RX-DRP/RX-OK)*100       |\n" | tee -a $log
 printf "|             TX-ERR might indicate Fast Ethernet/100Mbps Duplex Mismatch     |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| Chapter 2: Layers 1&2 Performance Optimization                              |\n" | tee -a $log
+printf "| Page 68-80                                                                  |\n" | tee -a $log
+printf "|                                                                             |\n" | tee -a $log
+printf "| Chapter 6: CoreXL & Multi-Queue                                             |\n" | tee -a $log
+printf "| Page 179                                                                    |\n" | tee -a $log
+else
 printf "| Chapter 2: Layers 1&2 Performance Optimization                              |\n" | tee -a $log
 printf "| Page 28-35                                                                  |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
 printf "| Chapter 7: CoreXL Tuning                                                    |\n" | tee -a $log
 printf "| Page 204                                                                    |\n" | tee -a $log
+fi
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
 run_command5=$($command5)
@@ -214,11 +261,26 @@ printf "|                                                                       
 printf "| Check for : Large # of conns on Worker 0 - IPSec VPN/VoIP?                  |\n" | tee -a $log
 printf "|             Large imbalance of connections on a single or multiple Workers  |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
+if [[ $current_version == *"R80.30"* ]]; then
+printf "| Chapter 6: CoreXL & Multi-Queue                                             |\n" | tee -a $log
+printf "| Page 216                                                                    |\n" | tee -a $log
+printf "|                                                                             |\n" | tee -a $log
+printf "| Chapter 9: Site-to-Site VPN Optimization                                          |\n" | tee -a $log
+printf "| Page 329                                                                    |\n" | tee -a $log
+printf "|                                                                             |\n" | tee -a $log
+printf "| $book2   |\n" | tee -a $log
 printf "| Chapter 7: CoreXL Tuning                                                    |\n" | tee -a $log
 printf "| Page 241                                                                    |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
 printf "| Chapter 8: CoreXL VPN Optimization                                          |\n" | tee -a $log
 printf "| Page 256                                                                    |\n" | tee -a $log
+else
+printf "| Chapter 7: CoreXL Tuning                                                    |\n" | tee -a $log
+printf "| Page 241                                                                    |\n" | tee -a $log
+printf "|                                                                             |\n" | tee -a $log
+printf "| Chapter 8: CoreXL VPN Optimization                                          |\n" | tee -a $log
+printf "| Page 256                                                                    |\n" | tee -a $log
+fi
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
 printf "$core_stat"
@@ -231,8 +293,8 @@ printf "|                                                                       
 printf "| Check for : High SND/IRQ Core Utilization                                   |\n" | tee -a $log
 printf "|             High Firewall Worker Core Utilization                           |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
-printf "| Chapter 7: CoreXL Tuning                                                    |\n" | tee -a $log
-printf "| Page 197                                                                    |\n" | tee -a $log
+printf "| Chapter 6: CoreXL & Multi-Queue                                             |\n" | tee -a $log
+printf "| Page 173                                                                    |\n" | tee -a $log
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
 run_command7=$($command7)

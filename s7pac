@@ -1,14 +1,18 @@
 #!/bin/bash
 #
-# s7pac v0.2 - Super Seven Performance Access Commands
+# s7pac v0.3 - Super Seven Performance Access Commands
+# URL: https://community.checkpoint.com/docs/DOC-3174
 #
-# Created by Rick Hoppe
+# Created by Rick Hoppe (https://checkpoint.engineer)
+#
 # Based on Timothy Hall's presentation: Gateway Performance Optimization
 # See https://community.checkpoint.com/docs/DOC-3169
 #
 # Version History
 # 0.1 First version
 # 0.2 Added firewall check, send output to a logfile, page numbers of book
+# 0.3 Added RX-DRP check. Thnx to feedback on Check Mates
+#
 ###############################################################################
 
 if [[ -e /etc/profile.d/CP.sh ]]; then
@@ -36,6 +40,37 @@ command7="cpstat os -f multi_cpu -o 1 -c 5"
 
 
 ###############################################################################
+# Function for command5 to detect RX drops
+###############################################################################
+detect_rx_drops() {
+(renice -20 $BASHPID > /dev/null 2>&1
+for DEV in `ifconfig | grep -ie "^eth" | tr ":" " " | awk '{ print $1 }' | sed -e 's/^[ \t]*//' | sed '/^$/d'`
+do
+RXDRP1=`netstat -ni |grep -w "$DEV"| grep -v "lo" |awk '{ print $6 }' | tail -1 | grep -v "RX-DRP" | sed -e 's/^[ \t]*//' | sed '/^$/d'`
+sleep 0.5
+RXDRP2=`netstat -ni |grep -w "$DEV"| grep -v "lo" |awk '{ print $6 }' | tail -1 | grep -v "RX-DRP" | sed -e 's/^[ \t]*//' | sed '/^$/d'`
+RXOK=`netstat -ni |grep -w "$DEV"| grep -v "lo" |awk '{ print $4 }' | tail -1 | grep -v "RX-DRP" | sed -e 's/^[ \t]*//' | sed '/^$/d'`
+if [ "$RXDRP2" -gt "$RXDRP1" ]
+then
+echo "interface $DEV: ${color_red}There are RX drops${color_clear}"
+echo "interface $DEV: There are RX drops" >> $log
+RXDRPOK=`awk "BEGIN {print ($RXDRP2/$RXOK)*100}"`
+echo "interface $DEV: RX-DRP percentage is $RXDRPOK% (must be <0.1%)" | tee -a $log
+echo "See page 206 (Network Buffering Misses)." | tee -a $log
+else
+echo "interface $DEV: ${color_green}There are no RX drops${color_clear}"
+echo "interface $DEV: There are no RX drops" >> $log
+fi
+echo "" | tee -a $log
+done
+
+renice 0 $BASHPID > /dev/null 2>&1)
+
+}
+
+
+
+###############################################################################
 # Function for command6 & execute before anything is printed
 ###############################################################################
 fwctlmultikstat()
@@ -59,16 +94,18 @@ color_clear=$(tput sgr0)
 # Hello world! Inspecting environment....
 ###############################################################################
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
-printf "| Super Seven Performance Assessment Commands v0.2   (Thanks to Timothy Hall) |\n" | tee -a $log
+printf "| Super Seven Performance Assessment Commands v0.3   (Thanks to Timothy Hall) |\n" | tee -a $log
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Inspecting your environment: " | tee -a $log
 if [[ $($CPDIR/bin/cpprod_util FwIsFirewallModule 2> /dev/null) != *"1"*  ]]; then
-  printf "${color_red}NOTOK${color_clear}                                          |\n" | tee -a $log
+  printf "${color_red}NOTOK${color_clear}                                          |\n"
+  echo "NOTOK                                          |" >> $log
   printf "| This script is only intended to run on a firewall (not management or VSX).  |\n" | tee -a $log
   printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
   exit 0;
 else
-  printf "${color_green}OK${color_clear}                                             |\n" | tee -a $log
+  printf "${color_green}OK${color_clear}                                             |\n"
+  echo "OK                                             |" >> $log
   printf "| This is a firewall....(continuing)                                          |\n" | tee -a $log
   sleep 1
 fi
@@ -167,6 +204,8 @@ printf "+-----------------------------------------------------------------------
 printf "| Output:                                                                     |\n" | tee -a $log
 run_command5=$($command5)
 echo "$run_command5" | tee -a $log
+printf "\n" | tee -a $log
+detect_rx_drops
 printf "\n\n" | tee -a $log
 
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
@@ -202,6 +241,7 @@ printf "\n\n" | tee -a $log
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Thanks for using s7pac                                                      |\n" | tee -a $log
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
+
 
 ###############################################################################
 # Cleaning up temporary files

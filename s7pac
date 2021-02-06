@@ -33,7 +33,7 @@
 # Version History
 # 0.1 First version
 # 0.2 Added firewall check, send output to a logfile, page numbers of book
-# 0.3 0.3 Added RX-DRP check (thanks to Ofir Shikolski for the code)
+# 0.3 Added RX-DRP check (thanks to Ofir Shikolski for the code)
 # 0.4 Updated with R80.30 references to the book Max Power 2020
 # 0.5 Added ethtool -S output (thanks to Andreas Zentsch for the tip)
 #

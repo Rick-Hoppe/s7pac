@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2020 Rick Hoppe
+# Copyright (c) 2021 Rick Hoppe
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# s7pac v0.4 - Super Seven Performance Access Commands
+# s7pac v0.5 - Super Seven Performance Access Commands
 # URL: https://community.checkpoint.com/docs/DOC-3174
 #
 # Created by Rick Hoppe (https://checkpoint.engineer)
@@ -33,8 +33,9 @@
 # Version History
 # 0.1 First version
 # 0.2 Added firewall check, send output to a logfile, page numbers of book
-# 0.3 Added RX-DRP check. Thnx to feedback on Check Mates
+# 0.3 0.3 Added RX-DRP check (thanks to Ofir Shikolski for the code)
 # 0.4 Updated with R80.30 references to the book Max Power 2020
+# 0.5 Added ethtool -S output (thanks to Andreas Zentsch for the tip)
 #
 ###############################################################################
 
@@ -76,16 +77,25 @@ RXDRP1=`netstat -ni |grep -w "$DEV"| grep -v "lo" |awk '{ print $6 }' | tail -1 
 sleep 0.5
 RXDRP2=`netstat -ni |grep -w "$DEV"| grep -v "lo" |awk '{ print $6 }' | tail -1 | grep -v "RX-DRP" | sed -e 's/^[ \t]*//' | sed '/^$/d'`
 RXOK=`netstat -ni |grep -w "$DEV"| grep -v "lo" |awk '{ print $4 }' | tail -1 | grep -v "RX-DRP" | sed -e 's/^[ \t]*//' | sed '/^$/d'`
+RXMISS=`ethtool -S $DEV | grep rx_missed_errors | awk '{ print $2 }'`
+RXFIFO=`ethtool -S $DEV | grep rx_fifo_errors | awk '{ print $2 }'`
+RXNOBUFF=`ethtool -S $DEV | grep rx_no_buffer_count | awk '{ print $2 }'`
+
 if [ "$RXDRP2" -gt "$RXDRP1" ]
 then
-echo "interface $DEV: ${color_red}There are RX drops${color_clear}"
-echo "interface $DEV: There are RX drops" >> $log
+echo "interface $DEV: ${color_red}There were RX drops in the past 0.5 seconds${color_clear}"
+echo "interface $DEV: There were RX drops in the past 0.5 seconds" >> $log
 RXDRPOK=`awk "BEGIN {print ($RXDRP2/$RXOK)*100}"`
 echo "interface $DEV: RX-DRP percentage is $RXDRPOK% (must be <0.1%)" | tee -a $log
-echo "See page 206 (Network Buffering Misses)." | tee -a $log
+echo "interface $DEV rx_missed_errors  : $RXMISS" | tee -a $log
+echo "interface $DEV rx_fifo_errors    : $RXFIFO" | tee -a $log
+echo "interface $DEV rx_no_buffer_count: $RXNOBUFF" | tee -a $log
 else
-echo "interface $DEV: ${color_green}There are no RX drops${color_clear}"
-echo "interface $DEV: There are no RX drops" >> $log
+echo "interface $DEV: ${color_green}There were no RX drops in the past 0.5 seconds${color_clear}"
+echo "interface $DEV: There were no RX drops in the past 0.5 seconds" >> $log
+echo "interface $DEV rx_missed_errors  : $RXMISS" | tee -a $log
+echo "interface $DEV rx_fifo_errors    : $RXFIFO" | tee -a $log
+echo "interface $DEV rx_no_buffer_count: $RXNOBUFF" | tee -a $log
 fi
 echo "" | tee -a $log
 done
@@ -93,7 +103,6 @@ done
 renice 0 $BASHPID > /dev/null 2>&1)
 
 }
-
 
 
 ###############################################################################
@@ -120,7 +129,7 @@ color_clear=$(tput sgr0)
 # Hello world! Inspecting environment....
 ###############################################################################
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
-printf "| Super Seven Performance Assessment Commands v0.4   (Thanks to Timothy Hall) |\n" | tee -a $log
+printf "| Super Seven Performance Assessment Commands v0.5   (Thanks to Timothy Hall) |\n" | tee -a $log
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Inspecting your environment: " | tee -a $log
 if [[ $($CPDIR/bin/cpprod_util FwIsFirewallModule 2> /dev/null) != *"1"*  ]]; then
@@ -262,17 +271,19 @@ printf "| Page 68-80                                                            
 printf "|                                                                             |\n" | tee -a $log
 printf "| Chapter 6: CoreXL & Multi-Queue                                             |\n" | tee -a $log
 printf "| Page 179                                                                    |\n" | tee -a $log
+printf "| Page 180 (Network Buffering Misses)                                         |\n" | tee -a $log
+printf "| Page 208-210 (RX-DRP Culprits)                                              |\n" | tee -a $log
 else
 printf "| Chapter 2: Layers 1&2 Performance Optimization                              |\n" | tee -a $log
 printf "| Page 28-35                                                                  |\n" | tee -a $log
 printf "|                                                                             |\n" | tee -a $log
 printf "| Chapter 7: CoreXL Tuning                                                    |\n" | tee -a $log
 printf "| Page 204                                                                    |\n" | tee -a $log
+printf "| Page 206 (Network Buffering Misses)                                         |\n" | tee -a $log
 fi
 printf "+-----------------------------------------------------------------------------+\n" | tee -a $log
 printf "| Output:                                                                     |\n" | tee -a $log
-run_command5=$($command5)
-echo "$run_command5" | tee -a $log
+netstat -ni | column -t | tee -a $log
 printf "\n" | tee -a $log
 detect_rx_drops
 printf "\n\n" | tee -a $log
